@@ -10,7 +10,7 @@ def get_bookings(current_user, id_user):
     response, status_code = get_bookings_controller(current_user, id_user)
     return jsonify(response), status_code
 
-@bookings_bp.route('/<id_user>', methods=['PUT'])
+@bookings_bp.route('/update/<id_user>', methods=['PUT'])
 @token_required
 def update_booking_route(current_user, id_user):
     data = request.json

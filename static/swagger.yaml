@@ -1,0 +1,490 @@
+openapi: 3.0.0
+info:
+  title: Booking API
+  description: API to manage bookings in a barber shop
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - phone
+                - birthDate
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  example: john@email.com
+                password:
+                  type: string
+                  example: admin123
+                phone:
+                  type: string
+                  example: +5511999999999
+                birthDate:
+                  type: string
+                  format: date
+                  example: 1995-05-10
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: User already exists
+
+  /auth/login:
+    post:
+      summary: Login user and get JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: john@email.com
+                password:
+                  type: string
+                  example: admin123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: d6957f05-117f-4d4e-bb22-a98512898ef1
+                      name:
+                        type: string
+                        example: Matheus S Tavares
+                      email:
+                        type: string
+                        example: matheus1@emial.com
+                      birthDate:
+                        type: string
+                        example: Tue, 26 Mar 1996 00:00:00 GMT
+                      phone:
+                        type: string
+                        example: +55 79 98863-1138
+                      createdAt:
+                        type: string
+                        example: Wed, 21 May 2025 00:00:00 GMT
+                      updatedAt:
+                        type: string
+                        example: Fri, 23 May 2025 00:00:00 GMT
+                      loyaltyPackage:
+                        type: string
+                        example: monthly
+                      avaliableServicesNumber:
+                        type: integer
+                        example: 0
+                      flStatus:
+                        type: string
+                        example: A
+        '401':
+          description: Invalid credentials
+
+  /auth/validate-token:
+    get:
+      summary: Valida o token JWT
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Valid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Valid token
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: john@email.com
+                      user_id:
+                        type: string
+                        example: d6957f05-117f-4d4e-bb22-a98512898ef1
+        '401':
+          description: Invalid, expired or not provided token
+
+  /bookings:
+    post:
+      summary: Create a new booking
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idUser:
+                  type: string
+                  example: "user_uuid"
+                date:
+                  type: string
+                  format: date
+                  example: "2025-05-22"
+                time:
+                  type: string
+                  example: "14:00"
+                serviceId:
+                  type: string
+                  example: "service_uuid"
+                barberId:
+                  type: string
+                  example: "barber_uuid"
+                status:
+                  type: string
+                  example: "scheduled"
+      responses:
+        "201":
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking created successfully"
+                  bookingId:
+                    type: string
+                    example: "booking_uuid"
+        "500":
+          description: Server error
+
+  /booking/{idUser}:
+    get:
+      summary: Get all bookings for a user
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: idUser
+          required: true
+          schema:
+            type: string
+          description: UUID of the user
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id_booking:
+                      type: string
+                      example: booking_uuid
+                    dt_date:
+                      type: string
+                      format: date
+                      example: 2025-05-22
+                    tx_time:
+                      type: string
+                      example: 14:00
+                    service:
+                      type: string
+                      example: Corte de Cabelo
+                    barber_name:
+                      type: string
+                      example: José Hernandez
+                    fl_status:
+                      type: string
+                      example: scheduled
+        '401':
+          description: Unauthorized
+
+  /booking/update/{idUser}:
+    put:
+      summary: Update a booking
+      description: Updates the details of an existing booking.
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          description: The ID of the user
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bookingId:
+                  type: string
+                  description: ID of the booking
+                  example: "abc123"
+                status:
+                  type: string
+                  description: The status to update
+                  example: "completed"
+              required:
+                - bookingId
+                - status
+      responses:
+        '200':
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Booking updated successfully
+                  booking:
+                    type: object
+                    properties:
+                      bookingId:
+                        type: string
+                        example: "booking789"
+                      status:
+                        type: string
+                        example: "Completed"
+        '400':
+          description: Invalid request
+        '404':
+          description: Booking not found
+        '500':
+          description: Internal server error
+
+  /barber/list:
+    get:
+      summary: Lists the barbers
+      tags:
+        - Barbers
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Barber list returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: d7a1f13a-5b32-4f68-8d7a-1c9e4a4f4f01
+                    name:
+                      type: string
+                      example: José Hernandez
+                    specialty:
+                      type: string
+                      example: Fade Specialist
+                    img:
+                      type: string
+                      example: /images/barber01.avif
+        '500':
+          description: Server error
+
+  /user/{id_user}:
+    get:
+      summary: Get user by ID
+      description: Retrieve details of a user by their unique ID.
+      tags:
+        - User
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id_user
+          in: path
+          required: true
+          description: The ID of the user to retrieve
+          schema:
+            type: string
+            example: "user123"
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "82d384b6-3d68-49d0-b990-103be3838bb4"
+                  name:
+                    type: string
+                    nullable: true
+                    example: null
+                  email:
+                    type: string
+                    example: "matheus@gmail.com"
+                  phone:
+                    type: string
+                    nullable: true
+                    example: null
+                  birthDate:
+                    type: string
+                    format: date
+                    nullable: true
+                    example: null
+                  flStatus:
+                    type: string
+                    description: User status (A = Active, I = Inactive)
+                    example: "I"
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: "Fri, 23 May 2025 00:00:00 GMT"
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: null
+                  avaliableServicesNumber:
+                    type: integer
+                    nullable: true
+                    example: null
+                  loyaltyPackage:
+                    type: string
+                    nullable: true
+                    example: null
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /users/{user_id}:
+    put:
+      summary: Update user
+      description: Update user information by ID.
+      tags:
+        - User
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The ID of the user to update
+          schema:
+            type: string
+            example: "d6957f05-117f-4d4e-bb22-a98512898ef1"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "d6957f05-117f-4d4e-bb22-a98512898ef1"
+                name:
+                  type: string
+                  example: "Matheus S Tavares"
+                email:
+                  type: string
+                  example: "matheus1@emial.com"
+                phone:
+                  type: string
+                  example: "+55 79 98863-1138"
+                birthDate:
+                  type: string
+                  format: date
+                  example: "1996-03-26"
+                avaliableServicesNumber:
+                  type: integer
+                  example: 0
+                loyaltyPackage:
+                  type: string
+                  example: "monthly"
+                createdAt:
+                  type: string
+                  format: date-time
+                  example: "Wed, 21 May 2025 00:00:00 GMT"
+              required:
+                - id
+                - name
+                - email
+                - phone
+                - birthDate
+                - avaliableServicesNumber
+                - loyaltyPackage
+                - createdAt
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuário atualizado com sucesso"
+        '400':
+          description: Invalid request
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error

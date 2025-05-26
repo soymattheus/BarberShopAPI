@@ -5,6 +5,7 @@ import jwt
 import uuid
 from models.auth import fetch_user_auth, insert_user_auth
 from config.jwt_auth import SECRET_KEY
+from utils.email_service import send_email
 
 def login_controller(emial, senha):
     try:
@@ -63,7 +64,29 @@ def register_controller(email, senha):
         # Gerar uuid
         user_id = str(uuid.uuid4())
 
-        inserted_id = insert_user_auth(user_id, email, hashed_password)
+        # Gerar token de ativação
+        activation_token = str(uuid.uuid4())
+
+        inserted_id = insert_user_auth(user_id, email, hashed_password, activation_token)
+
+        # Link de ativação
+        activation_link = f"https://suaapi.com/activate/{activation_token}"
+
+        # Envio de e-mail de boas-vindas
+        subject = "Welcome to The Barrio Barber!"
+        body = f"Hey {email}, welcome to The Barrio Barber!"
+        html = f"""
+                    <h1>Welcome, {email}!</h1>
+                    <p>Your registration has been successfully completed at <b>The Barrio Barber</b>.</p>
+                    <p>We are happy to have you with us!</p>
+                    <p>Click the link below to activate your account and start using our services:</p>
+                    <a href="{activation_link}">Activate your account</a>
+                    <p style="margin-top: 20px; color: gray; font-size: 12px;">
+                        Please do not reply to this email. This is an automated message.
+                    </p>
+                """
+
+        send_email(subject, [email], body, html)
 
         return {
             'message': 'Usuário cadastrado com sucesso',

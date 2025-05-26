@@ -36,18 +36,18 @@ def fetch_user_auth(email):
         cur.close()
         conn.close()
 
-def insert_user_auth(user_id, email, hashed_password):
+def insert_user_auth(user_id, email, hashed_password, activation_token):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
         # Inserir usuário no banco
         insert_query = """
-                    INSERT INTO tb_user (id_user, tx_email, tx_password, dt_created_at, fl_status)
-                    VALUES (%s, %s, %s, CURRENT_DATE, 'I')
+                    INSERT INTO tb_user (id_user, tx_email, tx_password, dt_created_at, fl_status, tx_activation_token)
+                    VALUES (%s, %s, %s, CURRENT_DATE, 'I', %s)
                     RETURNING id_user
                 """
-        cur.execute(insert_query, (user_id, email, hashed_password))
+        cur.execute(insert_query, (user_id, email, hashed_password, activation_token))
         user_id = cur.fetchone()[0]
 
         conn.commit()
