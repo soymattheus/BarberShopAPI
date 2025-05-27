@@ -22,13 +22,12 @@ def get_barber_model():
         return rows
 
     except Exception as e:
-        print(f"Erro ao buscar barbers: {e}")
-        raise e  # Opcional: repassa a exceção para ser tratada no controller
+        print(f"Error searching for barbers: {e}")
+        raise e
 
     finally:
         cur.close()
         conn.close()
-
 
 def update_booking_model(booking_id, status):
     try:
@@ -49,10 +48,10 @@ def update_booking_model(booking_id, status):
 
         conn.commit()
 
-        return {'message': 'Agendamento atualizado com sucesso'}
+        return {'message': 'Schedule updated successfully'}
 
     except Exception as e:
-        print(f"Erro ao atualizar booking {booking_id}: {e}")
+        print(f"Error updating booking {booking_id}: {e}")
         raise e
 
     finally:
@@ -64,7 +63,7 @@ def create_booking_model(id_user, date, time, service_id, barber_id):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        booking_id = str(uuid.uuid4())  # Gerando UUID para o booking
+        booking_id = str(uuid.uuid4())
 
         query = """
             INSERT INTO tb_booking (
@@ -90,12 +89,12 @@ def create_booking_model(id_user, date, time, service_id, barber_id):
         conn.commit()
 
         return {
-            'message': 'Agendamento criado com sucesso',
+            'message': 'Appointment created successfully',
             'bookingId': booking_id
         }
 
     except Exception as e:
-        print(f"Erro ao criar booking: {e}")
+        print(f"Error creating booking: {e}")
         raise e
 
     finally:

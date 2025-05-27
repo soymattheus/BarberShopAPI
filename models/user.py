@@ -28,8 +28,8 @@ def fetch_user_model(user_id):
         return user
 
     except Exception as e:
-        print(f"Erro ao buscar usuário {user_id}: {e}")
-        raise e  # Opcional: repassa a exceção para ser tratada no controller
+        print(f"Error when searching for user {user_id}: {e}")
+        raise e
 
     finally:
         cur.close()
@@ -63,16 +63,15 @@ def update_user_model(user_id, name, email, phone, birth_date, loyalty_package, 
             user_id
         ))
 
-        conn.commit()  # Importante para efetivar a alteração no banco
+        conn.commit()
 
-        return {'message': 'Usuário atualizado com sucesso'}
+        return {'message': 'User updated successfully'}
 
     except Exception as e:
-        print(f"Erro ao atualizar usuário {user_id}: {e}")
+        print(f"Error updating user {user_id}: {e}")
         raise e
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        cur.close()
+        conn.close()
+

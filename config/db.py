@@ -2,7 +2,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 
-# Carregar variáveis do .env
+# Load variables from .env
 load_dotenv()
 
 db_config = {

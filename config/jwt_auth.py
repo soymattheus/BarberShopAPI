@@ -19,7 +19,7 @@ def token_required(f):
                 token = auth_header.split(' ')[1]
 
         if not token:
-            return jsonify({'error': 'Token não fornecido'}), 401
+            return jsonify({'error': 'Token not provided'}), 401
 
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
@@ -28,9 +28,9 @@ def token_required(f):
                 'email': payload['email']
             }
         except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expirado'}), 401
+            return jsonify({'error': 'Expired token'}), 401
         except jwt.InvalidTokenError:
-            return jsonify({'error': 'Token inválido'}), 401
+            return jsonify({'error': 'Invalid token'}), 401
 
         return f(current_user, *args, **kwargs)
 

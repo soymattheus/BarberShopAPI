@@ -33,25 +33,14 @@ paths:
                 - name
                 - email
                 - password
-                - phone
                 - birthDate
               properties:
-                name:
-                  type: string
-                  example: John Doe
                 email:
                   type: string
                   example: john@email.com
                 password:
                   type: string
                   example: admin123
-                phone:
-                  type: string
-                  example: +5511999999999
-                birthDate:
-                  type: string
-                  format: date
-                  example: 1995-05-10
       responses:
         '201':
           description: User registered successfully
@@ -98,16 +87,16 @@ paths:
                         example: d6957f05-117f-4d4e-bb22-a98512898ef1
                       name:
                         type: string
-                        example: Matheus S Tavares
+                        example: John Doe
                       email:
                         type: string
-                        example: matheus1@emial.com
+                        example: johndoe@emial.com
                       birthDate:
                         type: string
-                        example: Tue, 26 Mar 1996 00:00:00 GMT
+                        example: Tue, 10 Mar 2025 00:00:00 GMT
                       phone:
                         type: string
-                        example: +55 79 98863-1138
+                        example: +55 79 98877-6655
                       createdAt:
                         type: string
                         example: Wed, 21 May 2025 00:00:00 GMT
@@ -128,7 +117,7 @@ paths:
 
   /auth/validate-token:
     get:
-      summary: Valida o token JWT
+      summary: Validates the JWT token
       tags:
         - Authentication
       security:
@@ -149,20 +138,19 @@ paths:
                     properties:
                       email:
                         type: string
-                        example: john@email.com
+                        example: johndoe@email.com
                       user_id:
                         type: string
                         example: d6957f05-117f-4d4e-bb22-a98512898ef1
         '401':
           description: Invalid, expired or not provided token
 
-  /bookings:
+  /auth/request-password-reset:
     post:
-      summary: Create a new booking
+      summary: Request password reset
       tags:
-        - Bookings
-      security:
-        - bearerAuth: [ ]
+        - Authentication
+      description: Sends an email to the user with a password reset link or token.
       requestBody:
         required: true
         content:
@@ -170,9 +158,136 @@ paths:
             schema:
               type: object
               properties:
-                idUser:
+                email:
                   type: string
-                  example: "user_uuid"
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset email sent successfully
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+    /auth/reset-password/{token}:
+      post:
+        summary: Reset password using token
+        tags:
+          - Auth
+        description: Reset the user password using the provided token
+        parameters:
+          - name: token
+            in: path
+            required: true
+            description: Password reset token sent via email
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newPassword:
+                    type: string
+                    example: "NewStrongPassword123"
+        responses:
+          '200':
+            description: Password reset successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: Password reset successfully
+          '400':
+            description: Invalid or expired token
+          '500':
+            description: Internal server error
+
+  /auth/reset-password/{token}:
+    post:
+      summary: Reset user password
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+            example: "d6957f05-117f-4d4e-bb22-a98512898ef1"
+          description: Token for password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  example: "NewPassword123!"
+              required:
+                - newPassword
+                - confirmPassword
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset successfully"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Internal server error
+
+  /booking/insert/{id_user}:
+    post:
+      summary: Create a new booking
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: id_user
+          required: true
+          schema:
+            type: string
+          description: UUID of the user creating the booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
                 date:
                   type: string
                   format: date
@@ -189,6 +304,12 @@ paths:
                 status:
                   type: string
                   example: "scheduled"
+                paymentType:
+                  type: string
+                  example: "pix"
+                nrPrice:
+                  type: number
+                  example: 50.2
       responses:
         "201":
           description: Booking created successfully
@@ -206,7 +327,7 @@ paths:
         "500":
           description: Server error
 
-  /booking/{idUser}:
+  /booking/query/{id_user}:
     get:
       summary: Get all bookings for a user
       tags:
@@ -215,7 +336,7 @@ paths:
         - bearerAuth: [ ]
       parameters:
         - in: path
-          name: idUser
+          name: id_user
           required: true
           schema:
             type: string
@@ -249,10 +370,16 @@ paths:
                     fl_status:
                       type: string
                       example: scheduled
+                    paymentType:
+                      type: string
+                      example: pix
+                    nrPrice:
+                      type: number
+                      example: 50.2
         '401':
           description: Unauthorized
 
-  /booking/update/{idUser}:
+  /booking/update/{id_user}:
     put:
       summary: Update a booking
       description: Updates the details of an existing booking.
@@ -261,7 +388,7 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: idUser
+        - name: id_user
           in: path
           required: true
           description: The ID of the user
@@ -312,7 +439,7 @@ paths:
         '500':
           description: Internal server error
 
-  /barber/list:
+  /barber/query:
     get:
       summary: Lists the barbers
       tags:
@@ -344,7 +471,7 @@ paths:
         '500':
           description: Server error
 
-  /user/{id_user}:
+  /user/query/{id_user}:
     get:
       summary: Get user by ID
       description: Retrieve details of a user by their unique ID.
@@ -413,7 +540,7 @@ paths:
         '500':
           description: Internal server error
 
-  /users/{user_id}:
+  /user/update/{id_user}:
     put:
       summary: Update user
       description: Update user information by ID.
@@ -422,7 +549,7 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: user_id
+        - name: id_user
           in: path
           required: true
           description: The ID of the user to update
@@ -486,5 +613,90 @@ paths:
           description: Invalid request
         '404':
           description: User not found
+        '500':
+          description: Internal server error
+
+  /activate/{activation_token}:
+    post:
+      summary: Activate user
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: activation_token
+          required: true
+          schema:
+            type: string
+          description: Activation user token
+          example: "f65e7c3a-1a2b-4e5c-9d8f-987654321abc"
+      responses:
+        '200':
+          description: Successful account activation page
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<html><body><h1>Your account has been successfully activated.</h1></body></html>"
+        '400':
+          description: Invalid or missing token
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<html><body><h1>Invalid or expired token.</h1></body></html>"
+        '404':
+          description: User not found
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<html><body><h1>User not found.</h1></body></html>"
+        '500':
+          description: Internal server error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<html><body><h1>Internal server error.</h1></body></html>"
+
+  /service/query:
+    get:
+      summary: Get all available services grouped by category
+      tags:
+        - Services
+      responses:
+        '200':
+          description: List of services grouped by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      example: Haircuts
+                    services:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            example: a1f5d8b2-1e0d-4e3c-b8d1-90f1b8a1c001
+                          name:
+                            type: string
+                            example: Classic Haircut
+                          description:
+                            type: string
+                            example: A traditional cut using clippers or scissors.
+                          price:
+                            type: number
+                            format: float
+                            example: 25.0
+        '404':
+          description: No services found
         '500':
           description: Internal server error

@@ -1,92 +1,108 @@
-from flask import request
 import bcrypt
-import datetime
+from datetime import datetime, timedelta
 import jwt
 import uuid
-from models.auth import fetch_user_auth, insert_user_auth
+import pytz
 from config.jwt_auth import SECRET_KEY
 from utils.email_service import send_email
+from utils.send_password_reset_email import send_password_reset_email
+from utils.send_activation_email import send_activation_email, send_resend_activation_email
 
-def login_controller(emial, senha):
+from models.auth import (
+    fetch_user_auth,
+    insert_user_auth,
+    fetch_user_by_activation_token,
+    activate_user,
+    fetch_user_by_email,
+    set_password_reset_token,
+    get_user_by_reset_token,
+    update_user_password
+)
+
+# Define Brasilia timezone
+tz = pytz.timezone('America/Sao_Paulo')
+
+def login_controller(emial, password):
     try:
         user = fetch_user_auth(emial)
 
         if user:
-            user_id, name, email, password, birth_date, phone, created_at, updated_at, loyalty_package, avaliable_services_number, fl_status = user
+            if user[10] == 'A':
+                if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
 
-            if fl_status == 'A':
-                if bcrypt.checkpw(senha.encode('utf-8'), password.encode('utf-8')):
-                    # ✅ Gerar o token JWT
                     payload = {
-                        'user_id': str(user_id),
-                        'email': email,
-                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)  # Expira em 1 hora
+                        'user_id': str(user[0]),
+                        'email': user[2],
+                        'exp': datetime.utcnow() + timedelta(hours=24)
                     }
 
                     token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
                     return {
-                        'message': 'Login bem-sucedido',
+                        'message': 'Logged in successfully',
                         'token': token,
                         'user': {
-                            'id': user_id,
-                            'name': name,
-                            'email': email,
-                            'birthDate': birth_date,
-                            'phone': phone,
-                            'createdAt': created_at,
-                            'updatedAt': updated_at,
-                            'loyaltyPackage': loyalty_package,
-                            'avaliableServicesNumber': avaliable_services_number,
-                            'flStatus': fl_status
+                            'id': user[0],
+                            'name': user[1],
+                            'email': user[2],
+                            'birthDate': user[4],
+                            'phone': user[5],
+                            'createdAt': user[6],
+                            'updatedAt': user[7],
+                            'loyaltyPackage': user[8],
+                            'avaliableServicesNumber': user[9],
+                            'flStatus': user[10]
                         }
                     }, 200
                 else:
-                    return {'error': 'Senha incorreta'}, 401
+                    return {'error': 'Incorrect password'}, 401
             else:
-                return {'error': 'Usuário inativo'}, 401
+                return {'error': 'Inactive user'}, 401
         else:
-            return {'error': 'Usuário não encontrado'}, 404
+            return {'error': 'User not found'}, 404
 
     except Exception as e:
         return {'error': str(e)}, 500
 
-def register_controller(email, senha):
+def register_controller(email, password):
     try:
         existing_user = fetch_user_auth(email)
 
         if existing_user:
-            return {'error': 'Email já cadastrado'}, 409
+            if existing_user[11] != None:
 
-        # Gerar hash da senha
-        hashed_password = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                activation_link = f"http://127.0.0.1:5000/activate/{existing_user[11]}"
 
-        # Gerar uuid
+                send_resend_activation_email(email, activation_link)
+
+            return {'error': 'Email already registered'}, 409
+
+        if len(password) < 8:
+            return {"message": "Password must be at least 8 characters long"}, 400
+        if not any(char.isdigit() for char in password):
+            return {"message": "Password must contain at least one numeric digit"}, 400
+        if not any(char.isupper() for char in password):
+            return {"message": "Password must contain at least one uppercase letter"}, 400
+        if not any(char.islower() for char in password):
+            return {"message": "Password must contain at least one lowercase letter"}, 400
+        if not any(char in "!@#$%^&*()-_=+[]{}|;:,.<>?/" for char in password):
+            return {"message": "Password must contain at least one special character"}, 400
+
+        # Generate password hash
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Generate uuid
         user_id = str(uuid.uuid4())
 
-        # Gerar token de ativação
+        # Generate activation token
         activation_token = str(uuid.uuid4())
 
         inserted_id = insert_user_auth(user_id, email, hashed_password, activation_token)
 
-        # Link de ativação
-        activation_link = f"https://suaapi.com/activate/{activation_token}"
+        # Activation link
+        activation_link = f"http://127.0.0.1:5000/activate/{activation_token}"
 
-        # Envio de e-mail de boas-vindas
-        subject = "Welcome to The Barrio Barber!"
-        body = f"Hey {email}, welcome to The Barrio Barber!"
-        html = f"""
-                    <h1>Welcome, {email}!</h1>
-                    <p>Your registration has been successfully completed at <b>The Barrio Barber</b>.</p>
-                    <p>We are happy to have you with us!</p>
-                    <p>Click the link below to activate your account and start using our services:</p>
-                    <a href="{activation_link}">Activate your account</a>
-                    <p style="margin-top: 20px; color: gray; font-size: 12px;">
-                        Please do not reply to this email. This is an automated message.
-                    </p>
-                """
-
-        send_email(subject, [email], body, html)
+        send_activation_email(email, activation_link)
 
         return {
             'message': 'Usuário cadastrado com sucesso',
@@ -99,24 +115,16 @@ def register_controller(email, senha):
     except Exception as e:
         return {'error': str(e)}, 500
 
-def validate_token_controller():
-    token = None
-
-    # Captura o token do header Authorization
-    if 'Authorization' in request.headers:
-        auth_header = request.headers['Authorization']
-        if auth_header.startswith('Bearer '):
-            token = auth_header.split(' ')[1]
-
+def validate_token_controller(token):
     if not token:
-        return {'error': 'Token não fornecido'}, 401
+        return {'error': 'Token not provided'}, 401
 
     try:
-        # Decodifica o token
+        # Decode token
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
 
         return {
-            'message': 'Token válido',
+            'message': 'Valid token',
             'user': {
                 'user_id': payload['user_id'],
                 'email': payload['email']
@@ -124,7 +132,93 @@ def validate_token_controller():
         }, 200
 
     except jwt.ExpiredSignatureError:
-        return {'error': 'Token expirado'}, 401
+        return {'error': 'Expired token'}, 401
 
     except jwt.InvalidTokenError:
-        return {'error': 'Token inválido'}, 401
+        return {'error': 'Invalid token'}, 401
+
+def get_user_by_activation_token_controller(activation_token):
+    try:
+        if not activation_token:
+            return {'message': 'Token not provided'}, 400
+
+        user = fetch_user_by_activation_token(activation_token)
+
+        if not user:
+            return {'message': 'Invalid or expired token'}, 404
+
+        return {
+            'id_user': user[0],
+            'fl_status': user[1],
+            'tx_activation_token': user[2]
+        }, 200
+
+    except Exception as e:
+        print(f"Token error: {e}")
+        return {'message': f'Erro: {str(e)}'}, 500
+
+def activate_account_controller(user_id):
+    try:
+        if not user_id:
+            return {'message': 'User ID not provided'}, 400
+
+        activate_user(user_id)
+
+        return {'message': 'Account activated successfully'}, 200
+
+    except Exception as e:
+        return {'message': f'Error activating account: {str(e)}'}, 500
+
+def request_password_reset_controller(email):
+    try:
+        user = fetch_user_by_email(email)
+        if not user:
+            return {"message": "User not found"}, 404
+
+        reset_token = str(uuid.uuid4())
+
+        # Current date and time in Brasilia timezone
+        now = datetime.now(tz)
+
+        # Expiration date (1 hour ahead)
+        expiration = now + timedelta(hours=1)
+
+        set_password_reset_token(user[0], reset_token, expiration)
+
+        reset_link = f"http://localhost:5000/auth/reset-password/{reset_token}"
+
+        send_password_reset_email(email, reset_link)
+
+        return {
+            "message": "Password reset email sent successfully"
+        }, 200
+
+    except Exception as e:
+        print(f"Request reset password error: {e}")
+        return {'message': f'Request reset password error: {str(e)}'}, 500
+
+def reset_password_controller(token, new_password):
+    if not new_password:
+        return {"message": "New password is required"}, 400
+
+    user = get_user_by_reset_token(token)
+    if not user:
+        return {"message": "Invalid or expired token"}, 400
+    
+    if len(new_password) < 8:
+        return {"message": "Password must be at least 8 characters long"}, 400
+    if not any(char.isdigit() for char in new_password):
+        return {"message": "Password must contain at least one numeric digit"}, 400
+    if not any(char.isupper() for char in new_password):
+        return {"message": "Password must contain at least one uppercase letter"}, 400
+    if not any(char.islower() for char in new_password):
+        return {"message": "Password must contain at least one lowercase letter"}, 400
+    if not any(char in "!@#$%^&*()-_=+[]{}|;:,.<>?/" for char in new_password):
+        return {"message": "Password must contain at least one special character"}, 400
+
+    # Use bcrypt to hash the new password
+    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    update_user_password(user[0], hashed_password)
+
+    return {"message": "Password reset successfully"}, 200

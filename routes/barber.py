@@ -4,7 +4,7 @@ from config.jwt_auth import token_required
 
 barber_bp = Blueprint('barber', __name__, url_prefix='/barber')
 
-@barber_bp.route('/list', methods=['GET'])
+@barber_bp.route('/query', methods=['GET'])
 @token_required
 def get_barber(current_user):
     response, status_code = get_barber_controller(current_user)

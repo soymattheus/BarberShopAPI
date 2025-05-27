@@ -1,7 +1,7 @@
 import uuid
 from config.db import get_db_connection
 
-def get_bookins_model(id_user):
+def get_bookings_model(id_user):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -13,7 +13,9 @@ def get_bookins_model(id_user):
                 b.tx_time, 
                 tsl.tx_name AS service, 
                 tb.tx_nome AS barber_name, 
-                b.fl_status 
+                b.fl_status,
+                b.tx_payment_type,
+                b.nr_price
             FROM tb_booking b
             LEFT JOIN tb_service_list tsl ON tsl.id_service = b.id_service
             LEFT JOIN tb_barber tb ON tb.id_barber = b.id_barber
@@ -26,14 +28,12 @@ def get_bookins_model(id_user):
         return rows
 
     except Exception as e:
-        print(f"Erro ao buscar bookings do usuário {id_user}: {e}")
-        raise e  # Opcional: repassa a exceção para ser tratada no controller
+        print(f"Error fetching user bookings {id_user}: {e}")
+        raise e
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        cur.close()
+        conn.close()
 
 def update_booking_model(booking_id, status):
     try:
@@ -54,22 +54,22 @@ def update_booking_model(booking_id, status):
 
         conn.commit()
 
-        return {'message': 'Agendamento atualizado com sucesso'}
+        return {'message': 'Schedule updated successfully'}
 
     except Exception as e:
-        print(f"Erro ao atualizar booking {booking_id}: {e}")
+        print(f"Error updating booking {booking_id}: {e}")
         raise e
 
     finally:
         cur.close()
         conn.close()
 
-def create_booking_model(id_user, date, time, service_id, barber_id):
+def create_booking_model(id_user, date, time, service_id, barber_id, payment_type, nr_price):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        booking_id = str(uuid.uuid4())  # Gerando UUID para o booking
+        booking_id = str(uuid.uuid4())
 
         query = """
             INSERT INTO tb_booking (
@@ -79,8 +79,10 @@ def create_booking_model(id_user, date, time, service_id, barber_id):
                 tx_time,
                 id_service,
                 id_barber,
-                fl_status
-            ) VALUES (%s, %s, %s, %s, %s, %s, 'scheduled')
+                fl_status,
+                b.tx_payment_type,
+                b.nr_price
+            ) VALUES (%s, %s, %s, %s, %s, %s, 'scheduled', %s, %s)
         """
 
         cur.execute(query, (
@@ -89,22 +91,22 @@ def create_booking_model(id_user, date, time, service_id, barber_id):
             date,
             time,
             service_id,
-            barber_id
+            barber_id,
+            payment_type,
+            nr_price
         ))
 
         conn.commit()
 
         return {
-            'message': 'Agendamento criado com sucesso',
+            'message': 'Appointment created successfully',
             'bookingId': booking_id
         }
 
     except Exception as e:
-        print(f"Erro ao criar booking: {e}")
+        print(f"Error creating booking: {e}")
         raise e
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        cur.close()
+        conn.close()

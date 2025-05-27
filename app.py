@@ -5,9 +5,10 @@ from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 
 from routes.bookings import bookings_bp
-from routes.auth import auth_bp
+from routes.auth import auth_bp, activation_bp
 from routes.user import user_bp
 from routes.barber import barber_bp
+from routes.service import service_bp
 
 from extensions import mail
 
@@ -29,33 +30,22 @@ def create_app():
 
     mail.init_app(app)
 
-    # pip freeze > requirements.txt
-    # pip install -r requirements.txt
-
-    # Build dos containers
-    # docker-compose build
-
-    # Subir os containers
-    # docker-compose up
-
-    # Derrubar os containers
-    # docker-compose down
-
-    # Configurar CORS global
+    # Configure global CORS
     CORS(app)
-    # Configurar CORS para apenas essas origens
+    # Configure CORS for only these origins
     #CORS(app, origins=["https://meusite.com", "http://localhost:3000"])
 
-    # Registrar blueprints
+    # Register blueprints
     app.register_blueprint(bookings_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(activation_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(barber_bp)
+    app.register_blueprint(service_bp)
 
-
-    # Configuração do Swagger
+    # Configure Swagger
     SWAGGER_URL = '/swagger'
-    API_URL = '/static/swagger.yaml'  # Caminho do arquivo swagger.yaml na pasta static
+    API_URL = '/static/swagger.yaml'
 
     swaggerui_blueprint = get_swaggerui_blueprint(
         SWAGGER_URL,
@@ -72,3 +62,15 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
+
+# pip freeze > requirements.txt
+# pip install -r requirements.txt
+
+# Build containers
+# docker-compose build
+
+# Run containers
+# docker-compose up
+
+# Stop containers
+# docker-compose down

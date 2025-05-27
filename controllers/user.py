@@ -1,11 +1,10 @@
 from flask import jsonify, request
 from models.user import fetch_user_model, update_user_model
 
-
 def get_user_controller(current_user, id_user):
     try:
         if id_user != current_user['user_id']:
-            return {'error': 'Acesso não autorizado'}, 403
+            return {'error': 'Unauthorized access'}, 403
 
         user = fetch_user_model(id_user)
 
@@ -27,7 +26,7 @@ def get_user_controller(current_user, id_user):
             }, 200
 
         else:
-            return {'error': 'Usuário não encontrado'}, 404
+            return {'error': 'User not found'}, 404
 
     except Exception as e:
         return {'error': str(e)}, 500
@@ -37,7 +36,7 @@ def update_user_controller(current_user, id_user):
 
     try:
         if id_user != current_user['user_id']:
-            return {'error': 'Acesso não autorizado'}, 403
+            return {'error': 'Unauthorized access'}, 403
 
         response = update_user_model(
             user_id=id_user,
