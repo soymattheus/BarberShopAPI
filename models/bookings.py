@@ -80,8 +80,8 @@ def create_booking_model(id_user, date, time, service_id, barber_id, payment_typ
                 id_service,
                 id_barber,
                 fl_status,
-                b.tx_payment_type,
-                b.nr_price
+                tx_payment_type,
+                nr_price
             ) VALUES (%s, %s, %s, %s, %s, %s, 'scheduled', %s, %s)
         """
 
