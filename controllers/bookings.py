@@ -16,8 +16,8 @@ def get_bookings_controller(current_user, id_user):
                 'service': row[3],
                 'barber_name': row[4],
                 'status': row[5],
-                'payment_type': rows[6],
-                'nr_price': rows[7]
+                'payment_type': row[6],
+                'nr_price': row[7]
             })
 
         return {

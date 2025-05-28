@@ -6,6 +6,7 @@ info:
 
 servers:
   - url: http://localhost:5000
+  - url: https://barbershopapi-production-1060.up.railway.app
 
 components:
   securitySchemes:

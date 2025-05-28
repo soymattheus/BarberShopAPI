@@ -8,8 +8,8 @@ def get_bookings_model(id_user):
 
         query = """
             SELECT 
-                b.id_booking, 
-                b.dt_date, 
+                b.id_booking,
+                b.dt_date,
                 b.tx_time, 
                 tsl.tx_name AS service, 
                 tb.tx_nome AS barber_name, 
