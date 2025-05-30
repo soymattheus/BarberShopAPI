@@ -201,8 +201,7 @@ def request_password_reset_controller(email):
 
         set_password_reset_token(user[0], reset_token, expiration)
 
-        #front_base_url = os.getenv('FRONT_URL')
-        front_base_url = 'http://localhost:3000'
+        front_base_url = os.getenv('FRONT_URL')
 
         reset_link = f"{front_base_url}/passwordReset/{reset_token}"
 
