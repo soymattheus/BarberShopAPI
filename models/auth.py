@@ -104,12 +104,15 @@ def activate_user(user_id):
                 tx_activation_token = NULL,
                 dt_updated_at = %s
             WHERE id_user = %s
+            RETURNING tx_email
         """
 
         cur.execute(query, (datetime.utcnow(), user_id))
         conn.commit()
+        user = cur.fetchone()
 
         print(f"User {user_id} actives successfully.")
+        return user
 
     except Exception as e:
         print(f"Error activating user {user_id}: {e}")
@@ -177,9 +180,14 @@ def update_user_password(user_id, hashed_password):
             UPDATE tb_user 
             SET tx_password = %s, tx_reset_pw_token = NULL, dt_reset_pw_token_exp = NULL, dt_updated_at = %s 
             WHERE id_user = %s
+            RETURNING tx_email
         """
         cursor.execute(query, (hashed_password, datetime.utcnow(), user_id))
         conn.commit()
+
+        rows = cursor.fetchone()
+        return rows
+
     finally:
         cursor.close()
         conn.close()

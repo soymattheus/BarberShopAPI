@@ -7,7 +7,7 @@ def get_barber_controller(current_user):
         barbers = []
         for row in rows:
             barbers.append({
-                'idBarber': str(row[0]),
+                'barberId': str(row[0]),
                 'name': row[1],
                 'specialty': row[2],
                 'urlImg': row[3],

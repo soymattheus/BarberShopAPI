@@ -1,4 +1,10 @@
-from models.bookings import get_bookings_model, update_booking_model, create_booking_model
+from utils.send_email import send_booking_confirmation_email
+from models.bookings import (
+    get_bookings_model,
+    update_booking_model,
+    create_booking_model,
+    get_booking_data_for_email_model
+)
 
 def get_bookings_controller(current_user, id_user):
     if id_user != current_user['user_id']:
@@ -10,18 +16,17 @@ def get_bookings_controller(current_user, id_user):
         bookings = []
         for row in rows:
             bookings.append({
-                'id_booking': str(row[0]),
+                'bookingId': str(row[0]),
                 'date': row[1].isoformat(),
                 'time': row[2],
                 'service': row[3],
-                'barber_name': row[4],
+                'barberName': row[4],
                 'status': row[5],
-                'payment_type': row[6],
-                'nr_price': row[7]
+                'paymentType': row[6],
+                'price': row[7]
             })
 
         return {
-            'id_user': id_user,
             'bookings': bookings
         }, 200
 
@@ -56,7 +61,23 @@ def create_booking_controller(current_user, id_user, date, time, service_id, bar
             payment_type=payment_type,
             nr_price=nr_price
         )
-        return response, 200
+
+        appointment_id = response[0]
+
+        appointment_email_data = get_booking_data_for_email_model(appointment_id)
+
+        service_name = appointment_email_data[0]
+        barber = appointment_email_data[1]
+        user_name = appointment_email_data[2]
+
+        send_booking_confirmation_email(current_user['email'], user_name, barber, date, time, service_name, appointment_id)
+        return {
+            'userName': user_name,
+            'barberName': barber,
+            'date': date,
+            'time': time,
+            'service': service_name
+        }, 200
 
     except Exception as e:
         return {'error': str(e)}, 500

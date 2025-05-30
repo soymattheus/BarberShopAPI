@@ -13,7 +13,7 @@ def get_service_controller():
                 grouped[category] = []
 
             grouped[category].append({
-                "id": id_service,
+                "serviceId": id_service,
                 "name": name,
                 "description": description,
                 "price": float(price)

@@ -1,3 +1,10 @@
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+front_base_url = os.getenv('FRONT_URL')
+
 def html_template(title, message, status):
     color = {
         "success": "#10B981",  # verde Tailwind
@@ -69,7 +76,7 @@ def html_template(title, message, status):
         <div class="container">
             <h1>{title}</h1>
             <p>{message}</p>
-            <a class="button" href="http://localhost:3000/">Back to Home</a>
+            <a class="button" href="{front_base_url}/">Back to Home</a>
         </div>
     </body>
     </html>

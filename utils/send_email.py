@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 from utils.email_service import send_email
-from utils.generate_ics import generate_ics_content
+from utils.generate_ics import generate_and_save_ics
 
 load_dotenv()
 
@@ -57,7 +57,23 @@ def send_completed_activation_email(email: str):
 
     send_email(subject, [email], body, html)
 
-def send_booking_confirmation_email(email: str, name: str, date: str, time: str, service: str, appointment_id: str):
+def send_password_updated_email(email: str):
+    subject = "Your password has been updated - The Barrio Barber"
+    body = f"Hey {email}, your password has been successfully updated at The Barrio Barber!"
+    html = f"""
+        <h1>Password Updated Successfully</h1>
+        <p>Hey {email},</p>
+        <p>This is a confirmation that your password has been successfully updated at <b>The Barrio Barber</b>.</p>
+        <p>If you did not perform this action, please contact our support team immediately.</p>
+        <a href="{front_base_url}">Access your account</a>
+        <p style="margin-top: 20px; color: gray; font-size: 12px;">
+            Please do not reply to this email. This is an automated message.
+        </p>
+    """
+
+    send_email(subject, [email], body, html)
+
+def send_booking_confirmation_email(email: str, name: str, barber: str, date: str, time: str, service: str, appointment_id: str):
     subject = "Your Appointment is Confirmed - The Barrio Barber"
 
     # Google Calendar link
@@ -78,7 +94,7 @@ def send_booking_confirmation_email(email: str, name: str, date: str, time: str,
     google_calendar_link = f"https://www.google.com/calendar/render?{urlencode(params, quote_via=quote)}"
 
     # ICS file
-    ics_content = generate_ics_content(name, date, time, service)
+    ics_content = generate_and_save_ics(name, date, time, service)
     ics_filename = f"appointment_{appointment_id}.ics"
     with open(ics_filename, "w") as f:
         f.write(ics_content)
@@ -88,6 +104,7 @@ def send_booking_confirmation_email(email: str, name: str, date: str, time: str,
     html = f"""
         <h1>Hey, {name}!</h1>
         <p>Your appointment for <b>{service}</b> has been <b>confirmed</b> at <b>The Barrio Barber</b>.</p>
+        <p><b>Barber:</b> {barber}</p>
         <p><b>Date:</b> {date}</p>
         <p><b>Time:</b> {time}</p>
         <p>We look forward to seeing you!</p>
@@ -96,7 +113,7 @@ def send_booking_confirmation_email(email: str, name: str, date: str, time: str,
             <a href="{google_calendar_link}" target="_blank"
                style="display: inline-block; padding: 10px 20px; background-color: #4285F4; color: white;
                       text-decoration: none; border-radius: 4px;">
-                ➕ Add to Google Calendar
+                Add to Google Calendar
             </a>
         </p>
 
@@ -104,7 +121,7 @@ def send_booking_confirmation_email(email: str, name: str, date: str, time: str,
             <a href="cid:{ics_filename}"
                style="display: inline-block; padding: 10px 20px; background-color: #34A853; color: white;
                       text-decoration: none; border-radius: 4px;">
-                🍎 Add to Apple/Outlook Calendar
+                Add to Apple/Outlook Calendar
             </a>
         </p>
 

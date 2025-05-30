@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+import os
 import bcrypt
 from datetime import datetime, timedelta
 import jwt
@@ -6,7 +8,13 @@ import pytz
 from config.jwt_auth import SECRET_KEY
 from utils.email_service import send_email
 from utils.send_password_reset_email import send_password_reset_email
-from utils.send_activation_email import send_activation_email, send_resend_activation_email
+
+from utils.send_email import (
+    send_activation_email,
+    send_resend_activation_email,
+    send_completed_activation_email,
+    send_password_updated_email
+)
 
 from models.auth import (
     fetch_user_auth,
@@ -21,6 +29,7 @@ from models.auth import (
 
 # Define Brasilia timezone
 tz = pytz.timezone('America/Sao_Paulo')
+load_dotenv()
 
 def login_controller(emial, password):
     try:
@@ -51,7 +60,7 @@ def login_controller(emial, password):
                             'updatedAt': user[7],
                             'loyaltyPackage': user[8],
                             'avaliableServicesNumber': user[9],
-                            'flStatus': user[10]
+                            'status': user[10]
                         }
                     }, 200
                 else:
@@ -70,8 +79,10 @@ def register_controller(email, password):
 
         if existing_user:
             if existing_user[11] != None:
+                api_base_url = os.getenv('API_URL')
+                # api_base_url = http://127.0.0.1:5000
 
-                activation_link = f"http://127.0.0.1:5000/activate/{existing_user[11]}"
+                activation_link = f"{api_base_url}/activate/{existing_user[11]}"
 
                 send_resend_activation_email(email, activation_link)
 
@@ -99,8 +110,11 @@ def register_controller(email, password):
 
         inserted_id = insert_user_auth(user_id, email, hashed_password, activation_token)
 
+        api_base_url = os.getenv('API_URL')
+        # api_base_url = 'http://127.0.0.1:5000/activate'
+
         # Activation link
-        activation_link = f"http://127.0.0.1:5000/activate/{activation_token}"
+        activation_link = f"{api_base_url}/activate/{activation_token}"
 
         send_activation_email(email, activation_link)
 
@@ -126,7 +140,7 @@ def validate_token_controller(token):
         return {
             'message': 'Valid token',
             'user': {
-                'user_id': payload['user_id'],
+                'userId': payload['user_id'],
                 'email': payload['email']
             }
         }, 200
@@ -148,9 +162,9 @@ def get_user_by_activation_token_controller(activation_token):
             return {'message': 'Invalid or expired token'}, 404
 
         return {
-            'id_user': user[0],
-            'fl_status': user[1],
-            'tx_activation_token': user[2]
+            'userId': user[0],
+            'status': user[1],
+            'activationToken': user[2]
         }, 200
 
     except Exception as e:
@@ -162,7 +176,9 @@ def activate_account_controller(user_id):
         if not user_id:
             return {'message': 'User ID not provided'}, 400
 
-        activate_user(user_id)
+        response = activate_user(user_id)
+
+        send_completed_activation_email(response[0])
 
         return {'message': 'Account activated successfully'}, 200
 
@@ -185,7 +201,10 @@ def request_password_reset_controller(email):
 
         set_password_reset_token(user[0], reset_token, expiration)
 
-        reset_link = f"http://localhost:5000/auth/reset-password/{reset_token}"
+        #front_base_url = os.getenv('FRONT_URL')
+        front_base_url = 'http://localhost:3000'
+
+        reset_link = f"{front_base_url}/passwordReset/{reset_token}"
 
         send_password_reset_email(email, reset_link)
 
@@ -219,6 +238,8 @@ def reset_password_controller(token, new_password):
     # Use bcrypt to hash the new password
     hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    update_user_password(user[0], hashed_password)
+    response = update_user_password(user[0], hashed_password)
+
+    send_password_updated_email(response[0])
 
     return {"message": "Password reset successfully"}, 200

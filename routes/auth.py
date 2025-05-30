@@ -59,7 +59,7 @@ def activate_account(activation_token):
                 "error"
             ))
 
-        activate_account_controller(user['id_user'])
+        activate_account_controller(user['userId'])
 
         return render_template_string(html_template(
             "Account activated successfully!",

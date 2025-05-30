@@ -13,7 +13,7 @@ def get_user_controller(current_user, id_user):
             print(user_id)
 
             return {
-                'id': user_id,
+                'userId': user_id,
                 'name': name,
                 'email': email,
                 'birthDate': birth_date,
@@ -22,7 +22,7 @@ def get_user_controller(current_user, id_user):
                 'updatedAt': updated_at,
                 'loyaltyPackage': loyalty_package,
                 'avaliableServicesNumber': avaliable_services_number,
-                'flStatus': fl_status
+                'status': fl_status
             }, 200
 
         else:

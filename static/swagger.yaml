@@ -31,10 +31,8 @@ paths:
             schema:
               type: object
               required:
-                - name
                 - email
                 - password
-                - birthDate
               properties:
                 email:
                   type: string
@@ -110,7 +108,7 @@ paths:
                       avaliableServicesNumber:
                         type: integer
                         example: 0
-                      flStatus:
+                      status:
                         type: string
                         example: A
         '401':
@@ -140,7 +138,7 @@ paths:
                       email:
                         type: string
                         example: johndoe@email.com
-                      user_id:
+                      userId:
                         type: string
                         example: d6957f05-117f-4d4e-bb22-a98512898ef1
         '401':
@@ -352,29 +350,29 @@ paths:
                 items:
                   type: object
                   properties:
-                    id_booking:
+                    bookingId:
                       type: string
                       example: booking_uuid
-                    dt_date:
+                    date:
                       type: string
                       format: date
                       example: 2025-05-22
-                    tx_time:
+                    time:
                       type: string
                       example: 14:00
                     service:
                       type: string
-                      example: Corte de Cabelo
-                    barber_name:
+                      example: Hair Cut
+                    barberName:
                       type: string
                       example: José Hernandez
-                    fl_status:
+                    status:
                       type: string
                       example: scheduled
                     paymentType:
                       type: string
                       example: pix
-                    nrPrice:
+                    price:
                       type: number
                       example: 50.2
         '401':
@@ -424,15 +422,6 @@ paths:
                   message:
                     type: string
                     example: Booking updated successfully
-                  booking:
-                    type: object
-                    properties:
-                      bookingId:
-                        type: string
-                        example: "booking789"
-                      status:
-                        type: string
-                        example: "Completed"
         '400':
           description: Invalid request
         '404':
@@ -457,7 +446,7 @@ paths:
                 items:
                   type: object
                   properties:
-                    id:
+                    barberId:
                       type: string
                       example: d7a1f13a-5b32-4f68-8d7a-1c9e4a4f4f01
                     name:
@@ -466,9 +455,12 @@ paths:
                     specialty:
                       type: string
                       example: Fade Specialist
-                    img:
+                    urlImg:
                       type: string
                       example: /images/barber01.avif
+                    status:
+                      type: string
+                      example: I
         '500':
           description: Server error
 
@@ -487,7 +479,6 @@ paths:
           description: The ID of the user to retrieve
           schema:
             type: string
-            example: "user123"
       responses:
         '200':
           description: User retrieved successfully
@@ -496,7 +487,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:
+                  userId:
                     type: string
                     example: "82d384b6-3d68-49d0-b990-103be3838bb4"
                   name:
@@ -515,7 +506,7 @@ paths:
                     format: date
                     nullable: true
                     example: null
-                  flStatus:
+                  status:
                     type: string
                     description: User status (A = Active, I = Inactive)
                     example: "I"
@@ -556,7 +547,6 @@ paths:
           description: The ID of the user to update
           schema:
             type: string
-            example: "d6957f05-117f-4d4e-bb22-a98512898ef1"
       requestBody:
         required: true
         content:
@@ -564,9 +554,6 @@ paths:
             schema:
               type: object
               properties:
-                id:
-                  type: string
-                  example: "d6957f05-117f-4d4e-bb22-a98512898ef1"
                 name:
                   type: string
                   example: "Matheus S Tavares"
@@ -586,19 +573,13 @@ paths:
                 loyaltyPackage:
                   type: string
                   example: "monthly"
-                createdAt:
-                  type: string
-                  format: date-time
-                  example: "Wed, 21 May 2025 00:00:00 GMT"
               required:
-                - id
                 - name
                 - email
                 - phone
                 - birthDate
                 - avaliableServicesNumber
                 - loyaltyPackage
-                - createdAt
       responses:
         '200':
           description: User updated successfully
@@ -609,7 +590,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Usuário atualizado com sucesso"
+                    example: "User updated successfully"
         '400':
           description: Invalid request
         '404':
@@ -683,7 +664,7 @@ paths:
                       items:
                         type: object
                         properties:
-                          id:
+                          serviceId:
                             type: string
                             format: uuid
                             example: a1f5d8b2-1e0d-4e3c-b8d1-90f1b8a1c001

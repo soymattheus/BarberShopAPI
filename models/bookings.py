@@ -83,6 +83,7 @@ def create_booking_model(id_user, date, time, service_id, barber_id, payment_typ
                 tx_payment_type,
                 nr_price
             ) VALUES (%s, %s, %s, %s, %s, %s, 'scheduled', %s, %s)
+            RETURNING id_booking
         """
 
         cur.execute(query, (
@@ -97,14 +98,42 @@ def create_booking_model(id_user, date, time, service_id, barber_id, payment_typ
         ))
 
         conn.commit()
+        rows = cur.fetchone()
 
-        return {
-            'message': 'Appointment created successfully',
-            'bookingId': booking_id
-        }
+        return rows
 
     except Exception as e:
         print(f"Error creating booking: {e}")
+        raise e
+
+    finally:
+        cur.close()
+        conn.close()
+
+def get_booking_data_for_email_model(id_booking):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        query = """
+            SELECT
+                tsl.tx_name as service,
+                tb.tx_nome as barber_name,
+                tu.tx_name as user_name
+            from tb_booking b
+            left join tb_service_list tsl on tsl.id_service = b.id_service
+            left join tb_barber tb on tb.id_barber = b.id_barber
+            left join tb_user tu on tu.id_user = b.id_user
+            WHERE b.id_booking = %s
+        """
+
+        cur.execute(query, (id_booking,))
+        rows = cur.fetchone()
+
+        return rows
+
+    except Exception as e:
+        print(f"Error fetching user bookings {id_booking}: {e}")
         raise e
 
     finally:
