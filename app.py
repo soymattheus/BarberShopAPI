@@ -1,8 +1,17 @@
 from dotenv import load_dotenv
+import json
 import os
-from flask import Flask
+import uuid
+from datetime import datetime
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask import Flask, request, jsonify
+from flask_socketio import (
+    SocketIO,
+    join_room,
+    leave_room,
+    emit
+)
 
 from routes.bookings import bookings_bp
 from routes.auth import auth_bp, activation_bp
@@ -11,11 +20,16 @@ from routes.barber import barber_bp
 from routes.service import service_bp
 
 from extensions import mail
+from redis_client import redis_client
+
 
 def create_app():
-    app = Flask(__name__)
-
     load_dotenv()
+    app = Flask(__name__)
+    sio = SocketIO(cors_allowed_origins="*")
+    sio.init_app(app)
+    # app.config['SECRET_KEY'] = 'secret!'
+    # sio.init_app(app, cors_allowed_origins="*")
 
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
@@ -44,18 +58,89 @@ def create_app():
     app.register_blueprint(service_bp)
 
     # Configure Swagger
-    SWAGGER_URL = '/swagger'
-    API_URL = '/static/swagger.yaml'
+    swagger_url = '/swagger'
+    api_url = '/static/swagger.yaml'
 
     swaggerui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
+        swagger_url,
+        api_url,
         config={
             'app_name': "Booking API"
         }
     )
 
-    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+    app.register_blueprint(swaggerui_blueprint, url_prefix=swagger_url)
+
+    # POST /message - Enviar mensagem
+    @app.post("/message")
+    def send_message():
+        data = request.json
+
+        id = str(uuid.uuid4())
+        room = data["room"]
+        text = data["text"]
+        sender = data["sender"]
+
+        agora = datetime.now()
+        data_hora_formatada = agora.strftime("%Y-%m-%d %H:%M")
+
+        msg = {
+            "id": id,
+            "room": room,
+            "text": text,
+            "sender": sender,
+            "created_at": data_hora_formatada
+        }
+
+        # 👉 chave da sala
+        key = f"chat:room:{room}:messages"
+
+        redis_client.rpush(key, json.dumps(msg))
+
+        # Emitir para websockets
+        sio.emit("new_message", {
+            "id": msg['id'],
+            "room": msg['room'],
+            "text": msg['text'],
+            "sender": msg['sender'],
+            "created_at": msg['created_at']
+        }, to=room)
+
+        return jsonify({"status": "ok"})
+
+    # GET /messages/<room>
+    @app.get("/messages/<room>")
+    def get_messages(room):
+        # 👉 chave da sala
+        key = f"chat:room:{room}:messages"
+
+        raw_messages = redis_client.lrange(key, 0, -1)
+
+        messages = [json.loads(m) for m in raw_messages]
+
+        return jsonify([
+            {
+                "id": m['id'],
+                "room": m['room'],
+                "sender": m['sender'],
+                "text": m['text'],
+                "created_at": m['created_at'],
+            }
+            for m in messages
+        ])
+
+    # WebSocket events
+    @sio.on("join_room")
+    def handle_join(data):
+        room = data["room"]
+        join_room(room)
+
+        emit("system", {"msg": f"Usuário entrou na sala {room}"}, to=room)
+
+    @sio.on("leave_room")
+    def handle_leave(data):
+        room = data["room"]
+        leave_room(room)
 
     return app
 

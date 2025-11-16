@@ -1,9 +1,13 @@
+from datetime import datetime
 from utils.send_email import send_booking_confirmation_email
 from models.bookings import (
     get_bookings_model,
     update_booking_model,
     create_booking_model,
-    get_booking_data_for_email_model
+    get_booking_data_for_email_model,
+    get_barber_model,
+    generate_booking_vacency_model,
+    check_booking_generation_model
 )
 
 def get_bookings_controller(current_user, id_user):
@@ -78,6 +82,26 @@ def create_booking_controller(current_user, id_user, date, time, service_id, bar
             'time': time,
             'service': service_name
         }, 200
+
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+def generate_booking_vacancy_controller():
+    try:
+        today = datetime.now()
+        formatted_date = today.strftime("%Y-%m-%d")
+
+        has_data = check_booking_generation_model(formatted_date)
+
+        if has_data[0] > 0:
+            return {'msg': 'Already Created'}, 200
+
+        barbers = get_barber_model()
+        for barber in barbers:
+            generate_booking_vacency_model(barber[0], formatted_date)
+            print(barber[0])
+
+        return {'msg': 'Created'}, 200
 
     except Exception as e:
         return {'error': str(e)}, 500

@@ -1,6 +1,11 @@
 from flask import Blueprint, jsonify, request
-from controllers.bookings import get_bookings_controller, update_booking_controller, create_booking_controller
 from config.jwt_auth import token_required
+from controllers.bookings import (
+    get_bookings_controller,
+    update_booking_controller,
+    create_booking_controller,
+    generate_booking_vacancy_controller
+)
 
 bookings_bp = Blueprint('booking', __name__, url_prefix='/booking')
 
@@ -37,3 +42,8 @@ def create_booking_route(current_user, id_user):
     booking, status_code = create_booking_controller(current_user, id_user, date, time, service_id, barber_id, payment_type, nr_price)
 
     return jsonify(booking), status_code
+
+@bookings_bp.route('/generate', methods=['POST'])
+def generate_bookin_vacancy_route():
+    result, status_code = generate_booking_vacancy_controller()
+    return jsonify(result), status_code
