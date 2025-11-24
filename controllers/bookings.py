@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 from datetime import datetime
 import pytz
 from utils.send_email import send_booking_confirmation_email
@@ -109,18 +110,16 @@ def cancel_booking_controller(current_user, id_user, id_booking):
     except Exception as e:
         return {'error': str(e)}, 500
 
-def generate_booking_vacancy_controller():
+def generate_booking_vacancy_controller(date):
     try:
-        today = datetime.now(fuso_horario_sp)
-
-        has_data = check_booking_generation_model(today)
+        has_data = check_booking_generation_model(date)
 
         if has_data[0] > 0:
             return {'msg': 'Already Created'}, 200
 
         barbers = get_barber_model()
         for barber in barbers:
-            generate_booking_vacency_model(barber[0], today)
+            generate_booking_vacency_model(barber[0], date)
 
         return {'msg': 'Created'}, 200
 
@@ -146,7 +145,16 @@ def get_bookings_available_dates_controller(id_barber):
 
 def get_bookings_available_times_controller(date, id_barber):
     try:
-        rows = get_bookings_available_times_model(date, id_barber)
+        sao_paulo_tz = ZoneInfo("America/Sao_Paulo")
+        now_sp = datetime.now(sao_paulo_tz)
+        today_sp = now_sp.date()
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+
+        if date_obj == today_sp:
+            start_date = now_sp
+        else:
+            start_date = date_obj
+        rows = get_bookings_available_times_model(start_date, date, id_barber)
 
         times = []
         for row in rows:

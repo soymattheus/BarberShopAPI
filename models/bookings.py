@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from config.db import get_db_connection
 
 def get_bookings_model(id_user):
@@ -188,28 +189,28 @@ def generate_booking_vacency_model(barber_id, date):
         cur = conn.cursor()
 
         query = """
-            insert into tb_booking_new
-            (id_booking, id_barber, dt_date, tx_time, fl_status) values
-            (%s, %s, %s, '10:00 AM', 'empty'),
-            (%s, %s, %s, '11:00 AM', 'empty'),
-            (%s, %s, %s, '12:00 PM', 'empty'),
-            (%s, %s, %s, '1:30 PM', 'empty'),
-            (%s, %s, %s, '2:30 PM', 'empty'),
-            (%s, %s, %s, '3:30 PM', 'empty'),
-            (%s, %s, %s, '4:30 PM', 'empty')
-        """
+                    insert into tb_booking_new
+                    (id_booking, id_barber, dt_date, tx_time, fl_status) values
+                    (%s, %s, %s, '10:00 AM', 'empty'),
+                    (%s, %s, %s, '11:00 AM', 'empty'),
+                    (%s, %s, %s, '12:00 PM', 'empty'),
+                    (%s, %s, %s, '1:30 PM', 'empty'),
+                    (%s, %s, %s, '2:30 PM', 'empty'),
+                    (%s, %s, %s, '3:30 PM', 'empty'),
+                    (%s, %s, %s, '4:30 PM', 'empty')
+                """
 
         cur.execute(query, (
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
-            str(uuid.uuid4()), barber_id, date,
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 13:00:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 14:00:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 15:00:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 16:30:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 17:30:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 18:30:00", "%Y-%m-%d %H:%M:%S"),
+            str(uuid.uuid4()), barber_id, datetime.strptime(date + " 19:30:00", "%Y-%m-%d %H:%M:%S"),
         ))
-
         conn.commit()
+
         return
 
     except Exception as e:
@@ -251,7 +252,7 @@ def get_bookings_available_dates_model(id_barber):
 
         query = """
             select distinct dt_date from tb_booking_new tbn
-            where tbn.dt_date >= current_date
+            where tbn.dt_date >= current_timestamp
             and tbn.id_barber = %s
             and tbn.id_user is null
             or tbn.id_user = ''
@@ -271,21 +272,22 @@ def get_bookings_available_dates_model(id_barber):
         cur.close()
         conn.close()
 
-def get_bookings_available_times_model(date, id_barber):
+def get_bookings_available_times_model(start_date, date, id_barber):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        end_date = datetime.strptime(date + " 23:59:59", "%Y-%m-%d %H:%M:%S")
 
         query = """
-            select tbn.id_booking, tbn.tx_time from tb_booking_new tbn
-            where date(tbn.dt_date) = %s
+            select tbn.id_booking, tbn.tx_time
+            from tb_booking_new tbn
+            where tbn.dt_date between %s::timestamp AND %s::timestamp
             and tbn.id_barber = %s
-            and tbn.id_user is null
-            or tbn.id_user = ''
+            and (tbn.id_user IS null OR tbn.id_user = '')
             order by tbn.dt_date
         """
 
-        cur.execute(query, (date, id_barber))
+        cur.execute(query, (start_date, end_date, id_barber))
         rows = cur.fetchall()
 
         return rows

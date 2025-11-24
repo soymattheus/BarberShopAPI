@@ -45,7 +45,11 @@ def create_booking_route(current_user, id_user):
 
 @bookings_bp.route('/generate', methods=['POST'])
 def generate_booking_vacancy_route():
-    result, status_code = generate_booking_vacancy_controller()
+    data = request.json
+
+    date = data.get('date')
+
+    result, status_code = generate_booking_vacancy_controller(date)
     return jsonify(result), status_code
 
 @bookings_bp.route('/query-dates/<id_barber>', methods=['GET'])
