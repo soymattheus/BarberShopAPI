@@ -94,6 +94,7 @@ def create_app():
 
         # 👉 chave da sala
         key = f"chat:room:{room}:messages"
+        print('AQUI')
 
         redis_client.rpush(key, json.dumps(msg))
 

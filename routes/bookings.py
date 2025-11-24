@@ -4,7 +4,10 @@ from controllers.bookings import (
     get_bookings_controller,
     update_booking_controller,
     create_booking_controller,
-    generate_booking_vacancy_controller
+    generate_booking_vacancy_controller,
+    get_bookings_available_dates_controller,
+    get_bookings_available_times_controller,
+    cancel_booking_controller
 )
 
 bookings_bp = Blueprint('booking', __name__, url_prefix='/booking')
@@ -32,18 +35,38 @@ def update_booking_route(current_user, id_user):
 def create_booking_route(current_user, id_user):
     data = request.json
 
-    date = data.get('date')
-    time = data.get('time')
     service_id = data.get('serviceId')
-    barber_id = data.get('barberId')
-    payment_type = data.get('paymentType')
+    id_booking = data.get('bookingId')
     nr_price = data.get('nrPrice')
 
-    booking, status_code = create_booking_controller(current_user, id_user, date, time, service_id, barber_id, payment_type, nr_price)
+    booking, status_code = create_booking_controller(current_user, id_user, service_id, nr_price, id_booking)
 
     return jsonify(booking), status_code
 
 @bookings_bp.route('/generate', methods=['POST'])
-def generate_bookin_vacancy_route():
+def generate_booking_vacancy_route():
     result, status_code = generate_booking_vacancy_controller()
     return jsonify(result), status_code
+
+@bookings_bp.route('/query-dates/<id_barber>', methods=['GET'])
+@token_required
+def get_bookings_dates_route(current_user, id_barber):
+    response, status_code = get_bookings_available_dates_controller(id_barber)
+    return jsonify(response), status_code
+
+@bookings_bp.route('/query-times/<date>/<id_barber>', methods=['GET'])
+@token_required
+def get_bookings_times_route(current_user, date, id_barber):
+    response, status_code = get_bookings_available_times_controller(date, id_barber)
+    return jsonify(response), status_code
+
+@bookings_bp.route('/cancel/<id_user>', methods=['PUT'])
+@token_required
+def cancel_booking_route(current_user, id_user):
+    data = request.json
+
+    booking_id = data.get('bookingId')
+
+    response, status_code = cancel_booking_controller(current_user, id_user, booking_id)
+
+    return jsonify(response), status_code

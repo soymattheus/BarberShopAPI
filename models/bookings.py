@@ -14,9 +14,8 @@ def get_bookings_model(id_user):
                 tsl.tx_name AS service, 
                 tb.tx_nome AS barber_name, 
                 b.fl_status,
-                b.tx_payment_type,
                 b.nr_price
-            FROM tb_booking b
+            FROM tb_booking_new b
             LEFT JOIN tb_service_list tsl ON tsl.id_service = b.id_service
             LEFT JOIN tb_barber tb ON tb.id_barber = b.id_barber
             WHERE b.id_user = %s
@@ -64,41 +63,60 @@ def update_booking_model(booking_id, status):
         cur.close()
         conn.close()
 
-def create_booking_model(id_user, date, time, service_id, barber_id, payment_type, nr_price):
+def create_booking_model(id_user, service_id, nr_price, id_booking):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        booking_id = str(uuid.uuid4())
-
         query = """
-            INSERT INTO tb_booking (
-                id_booking,
-                id_user,
-                dt_date,
-                tx_time,
-                id_service,
-                id_barber,
-                fl_status,
-                tx_payment_type,
-                nr_price
-            ) VALUES (%s, %s, %s, %s, %s, %s, 'scheduled', %s, %s)
-            RETURNING id_booking
+            UPDATE tb_booking_new tbn 
+            set id_user = %s,
+            fl_status = 'scheduled',
+            id_service = %s,
+            nr_price = %s
+            WHERE id_booking = %s
+            returning dt_date, tx_time
         """
 
         cur.execute(query, (
-            booking_id,
             id_user,
-            date,
-            time,
             service_id,
-            barber_id,
-            payment_type,
-            nr_price
+            nr_price,
+            id_booking
         ))
 
         conn.commit()
-        rows = cur.fetchone()
+        rows = cur.fetchall()
+
+        return rows
+
+    except Exception as e:
+        print(f"Error creating booking: {e}")
+        raise e
+
+    finally:
+        cur.close()
+        conn.close()
+
+def cancel_booking_model(id_booking):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        query = """
+            UPDATE tb_booking_new tbn 
+            set id_user = null,
+            fl_status = 'empty',
+            id_service = null,
+            nr_price = null
+            WHERE id_booking = %s
+            returning id_booking
+        """
+
+        cur.execute(query, (id_booking,))
+
+        conn.commit()
+        rows = cur.fetchall()
 
         return rows
 
@@ -117,14 +135,14 @@ def get_booking_data_for_email_model(id_booking):
 
         query = """
             SELECT
-                tsl.tx_name as service,
-                tb.tx_nome as barber_name,
-                tu.tx_name as user_name
-            from tb_booking b
-            left join tb_service_list tsl on tsl.id_service = b.id_service
-            left join tb_barber tb on tb.id_barber = b.id_barber
-            left join tb_user tu on tu.id_user = b.id_user
-            WHERE b.id_booking = %s
+            tsl.tx_name as service,
+            tb.tx_nome as barber_name,
+            tu.tx_name as user_name
+            from tb_booking_new b
+            join tb_service_list tsl on tsl.id_service = b.id_service
+            join tb_barber tb on tb.id_barber = b.id_barber
+            join tb_user tu on tu.id_user = b.id_user
+            where b.id_booking = %s
         """
 
         cur.execute(query, (id_booking,))
@@ -172,13 +190,13 @@ def generate_booking_vacency_model(barber_id, date):
         query = """
             insert into tb_booking_new
             (id_booking, id_barber, dt_date, tx_time, fl_status) values
-            (%s, %s, %s, '10:00', 'empty'),
-            (%s, %s, %s, '11:00', 'empty'),
-            (%s, %s, %s, '12:00', 'empty'),
-            (%s, %s, %s, '13:30', 'empty'),
-            (%s, %s, %s, '14:30', 'empty'),
-            (%s, %s, %s, '15:30', 'empty'),
-            (%s, %s, %s, '16:30', 'empty')
+            (%s, %s, %s, '10:00 AM', 'empty'),
+            (%s, %s, %s, '11:00 AM', 'empty'),
+            (%s, %s, %s, '12:00 PM', 'empty'),
+            (%s, %s, %s, '1:30 PM', 'empty'),
+            (%s, %s, %s, '2:30 PM', 'empty'),
+            (%s, %s, %s, '3:30 PM', 'empty'),
+            (%s, %s, %s, '4:30 PM', 'empty')
         """
 
         cur.execute(query, (
@@ -220,6 +238,60 @@ def check_booking_generation_model(date):
 
     except Exception as e:
         print(f"Error checking booking generation: {e}")
+        raise e
+
+    finally:
+        cur.close()
+        conn.close()
+
+def get_bookings_available_dates_model(id_barber):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        query = """
+            select distinct dt_date from tb_booking_new tbn
+            where tbn.dt_date >= current_date
+            and tbn.id_barber = %s
+            and tbn.id_user is null
+            or tbn.id_user = ''
+            order by tbn.dt_date
+        """
+
+        cur.execute(query, (id_barber,))
+        rows = cur.fetchall()
+
+        return rows
+
+    except Exception as e:
+        print(f"Error fetching baeber bookings available dates {id_barber}: {e}")
+        raise e
+
+    finally:
+        cur.close()
+        conn.close()
+
+def get_bookings_available_times_model(date, id_barber):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        query = """
+            select tbn.id_booking, tbn.tx_time from tb_booking_new tbn
+            where date(tbn.dt_date) = %s
+            and tbn.id_barber = %s
+            and tbn.id_user is null
+            or tbn.id_user = ''
+            order by tbn.dt_date
+        """
+
+        cur.execute(query, (date, id_barber))
+        rows = cur.fetchall()
+
+        return rows
+
+    except Exception as e:
+        print(f"Error fetching barber bookings available times {id_barber}: {e}")
         raise e
 
     finally:
