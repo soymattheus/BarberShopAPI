@@ -18,6 +18,7 @@ from routes.auth import auth_bp, activation_bp
 from routes.user import user_bp
 from routes.barber import barber_bp
 from routes.service import service_bp
+from routes.mercado_pago import mercado_pago_bp
 
 from extensions import mail
 from redis_client import redis_client
@@ -28,8 +29,7 @@ def create_app():
     app = Flask(__name__)
     sio = SocketIO(cors_allowed_origins="*")
     sio.init_app(app)
-    # app.config['SECRET_KEY'] = 'secret!'
-    # sio.init_app(app, cors_allowed_origins="*")
+
 
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
@@ -56,6 +56,7 @@ def create_app():
     app.register_blueprint(user_bp)
     app.register_blueprint(barber_bp)
     app.register_blueprint(service_bp)
+    app.register_blueprint(mercado_pago_bp)
 
     # Configure Swagger
     swagger_url = '/swagger'
@@ -94,7 +95,6 @@ def create_app():
 
         # 👉 chave da sala
         key = f"chat:room:{room}:messages"
-        print('AQUI')
 
         redis_client.rpush(key, json.dumps(msg))
 
