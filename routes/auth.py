@@ -11,7 +11,6 @@ from controllers.auth import (
     reset_password_controller
 )
 
-activation_bp = Blueprint('activation', __name__)
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login', methods=['POST'])
@@ -47,7 +46,7 @@ def validate_token():
     response, status_code = validate_token_controller(token)
     return jsonify(response), status_code
 
-@activation_bp.route('/activate/<activation_token>', methods=['GET'])
+@auth_bp.route('/activate/<activation_token>', methods=['POST'])
 def activate_account(activation_token):
     try:
         user, status_code = get_user_by_activation_token_controller(activation_token)

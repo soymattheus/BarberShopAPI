@@ -177,45 +177,6 @@ paths:
         '500':
           description: Internal server error
 
-    /auth/reset-password/{token}:
-      post:
-        summary: Reset password using token
-        tags:
-          - Auth
-        description: Reset the user password using the provided token
-        parameters:
-          - name: token
-            in: path
-            required: true
-            description: Password reset token sent via email
-            schema:
-              type: string
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  newPassword:
-                    type: string
-                    example: "NewStrongPassword123"
-        responses:
-          '200':
-            description: Password reset successfully
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: Password reset successfully
-          '400':
-            description: Invalid or expired token
-          '500':
-            description: Internal server error
-
   /auth/reset-password/{token}:
     post:
       summary: Reset user password
@@ -598,7 +559,7 @@ paths:
         '500':
           description: Internal server error
 
-  /activate/{activation_token}:
+  /auth/activate/{activation_token}:
     post:
       summary: Activate user
       tags:

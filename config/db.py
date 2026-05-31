@@ -10,7 +10,8 @@ db_config = {
     'dbname': os.getenv('DB_NAME'),
     'user': os.getenv('DB_USER'),
     'password': os.getenv('DB_PASSWORD'),
-    'port': os.getenv('DB_PORT')
+    'port': os.getenv('DB_PORT'),
+    'options': f"-c search_path={os.getenv('DB_SCHEMA')}"
 }
 
 def get_db_connection():

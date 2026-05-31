@@ -14,7 +14,7 @@ from flask_socketio import (
 )
 
 from routes.bookings import bookings_bp
-from routes.auth import auth_bp, activation_bp
+from routes.auth import auth_bp
 from routes.user import user_bp
 from routes.barber import barber_bp
 from routes.service import service_bp
@@ -52,7 +52,6 @@ def create_app():
     # Register blueprints
     app.register_blueprint(bookings_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(activation_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(barber_bp)
     app.register_blueprint(service_bp)
