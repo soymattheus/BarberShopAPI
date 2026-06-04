@@ -82,7 +82,7 @@ def register_controller(email, password):
                 api_base_url = os.getenv('API_URL')
                 # api_base_url = http://127.0.0.1:5000
 
-                activation_link = f"{api_base_url}/activate/{existing_user[11]}"
+                activation_link = f"{api_base_url}/auth/activate/{existing_user[11]}"
 
                 send_resend_activation_email(email, activation_link)
 

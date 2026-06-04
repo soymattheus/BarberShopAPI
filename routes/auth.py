@@ -46,7 +46,7 @@ def validate_token():
     response, status_code = validate_token_controller(token)
     return jsonify(response), status_code
 
-@auth_bp.route('/activate/<activation_token>', methods=['POST'])
+@auth_bp.route('/activate/<activation_token>', methods=['GET'])
 def activate_account(activation_token):
     try:
         user, status_code = get_user_by_activation_token_controller(activation_token)
