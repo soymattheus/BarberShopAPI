@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: barbershopapi-production-bafd.up.railway.app
+  - url: https://barbershopapi-production-bafd.up.railway.app
   - url: http://localhost:8000
 
 components:
